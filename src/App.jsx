@@ -1,18 +1,23 @@
-import { useState } from 'react'
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import './App.css'
-import Navbar from './components/Navbar'
-import Home from './components/Home'
-import AboutView from './components/AboutView'
-import { Routes, Route } from 'react-router-dom'
+import Home from './components/Home';
+import Product from './components/product';
 
 function App() {
   return (
-    <div>
-        <Navbar />
-        <Home />
-        <AboutView />
-
-    </div>
+    <>
+      <BrowserRouter>
+        <Routes>
+          <Route path='/' element ={<Home/>}/>
+          <Route path='/product' element = { <Product/>}/>
+        </Routes>
+        <ol>
+          <li>
+            <Link to = "product" style={{ textDecoration : "none" }}>Products</Link>
+          </li>
+        </ol>
+      </BrowserRouter>
+    </>
   )
 }
 
