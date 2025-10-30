@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 
 function useFetch(URL) {
   let [product, setProduct] = useState([]);
@@ -8,13 +9,8 @@ function useFetch(URL) {
   useEffect(() => {
     let fetchApi = async () => {
       try {
-        let response = await fetch(URL);
-        if (response.ok) {
-          let data = await response.json();
-          setProduct(data);
-        } else {
-          throw new Error("Data not found");
-        }
+        let response = await axios.get(URL); // Axios is very easy to use and it is developer friendly!
+        setProduct(response.data);
       } catch (error) {
         setError(error.message);
       } finally {

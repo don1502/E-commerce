@@ -30,7 +30,7 @@ const Product = () => {
 
   const { product, error, isLoading } = useFetch(
     " http://localhost:3000/products"
-  );
+  ); // Instead of above hook we have used a custom hook which can be called by other component and used in those component...
 
   if (isLoading) {
     return (
