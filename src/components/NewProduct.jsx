@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Paper, Typography, Grid, TextField, Button } from "@mui/material";
 
-let NewProduct = () => {
+const NewProduct = () => {
   let [newProduct, setNewProduct] = useState({
     title: "",
     price: 500,
@@ -43,7 +43,7 @@ let NewProduct = () => {
       body: JSON.stringify(newProduct),
     }).then(() => {
       alert("Data added successfully");
-      setNewProduct({
+      setNewProduct({ // This will change the create field back to empty form. So we update this setNewProduct.
         title: "",
         price: 500,
         description: "This the new product that is added",

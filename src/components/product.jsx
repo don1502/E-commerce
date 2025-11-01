@@ -2,8 +2,14 @@ import React, { useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import useFetch from "./hooks/useFetch";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Product = () => {
+  const { product, error, isLoading, setProduct } = useFetch(
+    " http://localhost:3000/products"
+  ); // Instead of below hook we have used a custom hook which can be called by other component and used in those component...
+
   //   let [product, setProduct] = useState([]);
   //   let [error, setError] = useState("");
   //   let [isLoading, setIsLoading] = useState(true);
@@ -26,11 +32,17 @@ const Product = () => {
   //       .finally(() => {
   //         setIsLoading(false);
   //       });
-  //   }, []);
+  //   }, []);   ========= For this we have used useFetch() a custom hook
 
-  const { product, error, isLoading } = useFetch(
-    " http://localhost:3000/products"
-  ); // Instead of above hook we have used a custom hook which can be called by other component and used in those component...
+  let navi = useNavigate();
+
+  let handleDelete = (id) => {
+    axios.delete(`http://localhost:3000/products/${id}`).then(() => {
+      alert("Deleted Successfully");
+      let updatedProducts = product.filter((product) => product.id !== id);
+      setProduct(updatedProducts);
+    });
+  };
 
   if (isLoading) {
     return (
@@ -58,9 +70,10 @@ const Product = () => {
               key={product.id}
               style={{
                 width: "18rem",
-                height: "25rem",
+                height: "20rem",
                 border: "1px solid black",
                 borderRadius: "5px",
+                padding: "20px",
               }}
               className="productCard"
             >
@@ -72,9 +85,11 @@ const Product = () => {
                 />
               </center>
               <Card.Body>
-                <Card.Title>{product.title}</Card.Title>
-                <Card.Text style={{ overflow: "scroll", height: "100px" }}>
-                  {product.description}
+                <Card.Title style={{ paddingLeft: "20px" }}>
+                  {product.title}
+                </Card.Title>
+                <Card.Text style={{ paddingLeft: "150px" }}>
+                  ₹ : {product.price}
                 </Card.Text>
               </Card.Body>
               <Card.Footer
@@ -85,8 +100,23 @@ const Product = () => {
                   gap: "5px",
                 }}
               >
-                <Card.Text>{product.price}</Card.Text>
-                <Button variant="primary">Add to Cart</Button>
+                <Button>Add to Cart</Button>
+                <Button
+                  onClick={() => {
+                    navi(`/updateproduct/${product.id}`);
+                  }}
+                >
+                  {" "}
+                  Edit{" "}
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleDelete(product.id);
+                  }}
+                >
+                  {" "}
+                  Delete
+                </Button>
               </Card.Footer>
             </Card>
           ))}
