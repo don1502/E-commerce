@@ -4,6 +4,8 @@ import Card from "react-bootstrap/Card";
 import useFetch from "./hooks/useFetch";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { addItem, removeItem } from "../store/cartSlice";
 
 const Product = () => {
   const { product, error, isLoading, setProduct } = useFetch(
@@ -42,6 +44,13 @@ const Product = () => {
       let updatedProducts = product.filter((product) => product.id !== id);
       setProduct(updatedProducts);
     });
+  };
+
+  let dispatch = useDispatch();
+
+  let addItemToCart = (product) => {
+    dispatch(addItem(product));
+    alert("Item added to Cart successfully😊");
   };
 
   if (isLoading) {
@@ -100,7 +109,9 @@ const Product = () => {
                   gap: "5px",
                 }}
               >
-                <Button>Add to Cart</Button>
+                <Button onClick={() => addItemToCart(product)}>
+                  Add to Cart
+                </Button>
                 <Button
                   onClick={() => {
                     navi(`/updateproduct/${product.id}`);
