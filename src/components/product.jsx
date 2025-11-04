@@ -4,7 +4,7 @@ import Card from "react-bootstrap/Card";
 import useFetch from "./hooks/useFetch";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addItem, removeItem } from "../store/cartSlice";
 
 const Product = () => {
@@ -47,10 +47,20 @@ const Product = () => {
   };
 
   let dispatch = useDispatch();
+  let cartState = useSelector((state) => {
+    return state.cart;
+  });
 
   let addItemToCart = (product) => {
-    dispatch(addItem(product));
-    alert("Item added to Cart successfully😊");
+    let checkProduct = cartState.some(
+      (cartProduct) => cartProduct.id === product.id
+    );
+    if (!checkProduct) {
+      dispatch(addItem(product));
+      alert("Item added to Cart successfully😊");
+    } else {
+      alert("Product already added !!");
+    }
   };
 
   if (isLoading) {

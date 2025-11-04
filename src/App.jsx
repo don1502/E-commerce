@@ -5,10 +5,13 @@ import Product from "./components/product";
 import NewProduct from "./components/NewProduct";
 import NotFound from "./components/NotFound";
 import UpdateProduct from "./components/UpdateProduct";
-import Cart from "./components/CartList";
 import { FaHome, FaProductHunt, FaShoppingCart } from "react-icons/fa";
 import { CgExtensionAdd } from "react-icons/cg";
 import CartList from "./components/CartList";
+
+if (!localStorage.getItem("cart")) {
+  localStorage.setItem("cart", JSON.stringify([]));
+}
 
 function App() {
   return (
