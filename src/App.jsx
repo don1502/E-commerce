@@ -8,6 +8,7 @@ import UpdateProduct from "./components/UpdateProduct";
 import { FaHome, FaProductHunt, FaShoppingCart } from "react-icons/fa";
 import { CgExtensionAdd } from "react-icons/cg";
 import CartList from "./components/CartList";
+import SignUp from "./components/SignUp";
 
 if (!localStorage.getItem("cart")) {
   localStorage.setItem("cart", JSON.stringify([]));
@@ -78,6 +79,7 @@ function App() {
           <Route path="/cartlist" element={<CartList />} />
           <Route path="/updateproduct/:id" element={<UpdateProduct />} />
           <Route path="/*" element={<NotFound />} />
+          <Route path="/signup" element={<SignUp />} />
         </Routes>
       </BrowserRouter>
     </>
