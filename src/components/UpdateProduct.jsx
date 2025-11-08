@@ -3,6 +3,8 @@ import { Paper, Typography, Grid, TextField, Button } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
+const API_URL = "http://localhost:5000";
+
 const UpdateProduct = () => {
   let [updateProduct, setUpdateProduct] = useState(null);
 
@@ -12,9 +14,20 @@ const UpdateProduct = () => {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:3000/products/${id}`)
-      .then((res) => setUpdateProduct(res.data));
-  }, []); // We give [] because this make the useEffect to render single time
+      .get(`${API_URL}/products/${id}`)
+      .then((res) => {
+        // Parse rating if it's a string (from JSONB)
+        const productData = res.data;
+        if (typeof productData.rating === 'string') {
+          productData.rating = JSON.parse(productData.rating);
+        }
+        setUpdateProduct(productData);
+      })
+      .catch((error) => {
+        console.error("Error fetching product:", error);
+        alert("Failed to load product");
+      });
+  }, [id]); // We give [id] because this make the useEffect to render when id changes
 
   let handleChange = (e) => {
     let { value, name } = e.target;
@@ -35,31 +48,34 @@ const UpdateProduct = () => {
     }
   };
 
-  let handleUpdate = (e) => {
+  let handleUpdate = async (e) => {
     e.preventDefault();
-    fetch(`http://localhost:3000/products/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updateProduct),
-    }).then(() => {
-      alert("Updated successfully");
-      //   setNewProduct({
-      //     title: "",
-      //     price: 500,
-      //     description: "This the new product that is added",
-      //     category: "",
-      //     image:
-      //       "https://fakestoreapi.com/img/71pWzhdJNwL._AC_UL640_QL65_ML3_t.png",
-      //     rating: {
-      //       rate: 0,
-      //       count: 0,
-      //     },
-      //   });
-      // --------dont want to change the area into normal blank space--------
-      navigate("/product");
-    });
+    try {
+      const formData = new FormData();
+      formData.append("title", updateProduct.title);
+      formData.append("price", updateProduct.price);
+      formData.append("description", updateProduct.description || "");
+      formData.append("category", updateProduct.category);
+      formData.append("rate", updateProduct.rating.rate);
+      formData.append("count", updateProduct.rating.count);
+      formData.append("image", updateProduct.image || "");
+
+      const response = await fetch(`${API_URL}/products/${id}`, {
+        method: "PUT",
+        body: formData,
+      });
+
+      if (response.ok) {
+        alert("Updated successfully");
+        navigate("/product");
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error || "Failed to update product"}`);
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+      alert("Failed to update product");
+    }
   };
 
   if (updateProduct !== null) {
@@ -81,40 +97,66 @@ const UpdateProduct = () => {
             onSubmit={handleUpdate}
           >
             <TextField
-              value={updateProduct.title}
+              value={updateProduct.title || ""}
               name="title"
               label="Title"
               variant="outlined"
               fullWidth
+              required
               onChange={handleChange}
             />
             <TextField
-              value={updateProduct.category}
+              value={updateProduct.price || ""}
+              name="price"
+              label="Price"
+              type="number"
+              variant="outlined"
+              fullWidth
+              required
+              inputProps={{ step: "0.01", min: "0" }}
+              onChange={handleChange}
+            />
+            <TextField
+              value={updateProduct.description || ""}
+              name="description"
+              label="Description"
+              variant="outlined"
+              fullWidth
+              multiline
+              rows={3}
+              onChange={handleChange}
+            />
+            <TextField
+              value={updateProduct.category || ""}
               name="category"
               label="Category"
               variant="outlined"
               fullWidth
+              required
               onChange={handleChange}
-              style={{ paddingBottom: "20px" }}
             />
             <Grid container spacing={2}>
               <Grid size={6}>
                 <TextField
-                  value={updateProduct.rating.rate}
+                  value={updateProduct.rating?.rate || 0}
                   name="rating.rate"
                   type="number"
-                  label="Rate"
+                  label="Rating Rate"
                   variant="outlined"
+                  fullWidth
+                  inputProps={{ step: "0.1", min: "0", max: "5" }}
                   onChange={handleChange}
                 />
               </Grid>
               <Grid size={6}>
                 <TextField
-                  value={updateProduct.rating.count}
+                  value={updateProduct.rating?.count || 0}
                   name="rating.count"
                   type="number"
-                  label="Count"
+                  label="Rating Count"
                   variant="outlined"
+                  fullWidth
+                  inputProps={{ min: "0" }}
                   onChange={handleChange}
                 />
               </Grid>
@@ -127,7 +169,7 @@ const UpdateProduct = () => {
       </center>
     );
   } else {
-    <div> Loading...</div>;
+    return <div style={{ textAlign: "center", padding: "50px" }}>Loading...</div>;
   }
 };
 

@@ -1,0 +1,6 @@
+node_modules/
+uploads/
+.env
+
+check_table_structure.sql
+update_table_if_needed.sql

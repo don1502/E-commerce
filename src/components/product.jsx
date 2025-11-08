@@ -2,15 +2,25 @@ import React, { useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import useFetch from "./hooks/useFetch";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { addItem, removeItem } from "../store/cartSlice";
 
+const API_URL = "http://localhost:5000";
+
 const Product = () => {
-  const { product, error, isLoading, setProduct } = useFetch(
-    " http://localhost:3000/products"
+  const location = useLocation();
+  const { product, error, isLoading, setProduct, refresh } = useFetch(
+    `${API_URL}/products`
   ); // Instead of below hook we have used a custom hook which can be called by other component and used in those component...
+
+  // Refresh products when navigating to this page
+  useEffect(() => {
+    if (location.pathname === '/product') {
+      refresh();
+    }
+  }, [location.pathname, refresh]);
 
   //   let [product, setProduct] = useState([]);
   //   let [error, setError] = useState("");
@@ -39,10 +49,13 @@ const Product = () => {
   let navi = useNavigate();
 
   let handleDelete = (id) => {
-    axios.delete(`http://localhost:3000/products/${id}`).then(() => {
+    axios.delete(`${API_URL}/products/${id}`).then(() => {
       alert("Deleted Successfully");
       let updatedProducts = product.filter((product) => product.id !== id);
       setProduct(updatedProducts);
+    }).catch((error) => {
+      console.error("Error deleting product:", error);
+      alert("Failed to delete product");
     });
   };
 
