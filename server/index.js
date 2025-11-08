@@ -33,7 +33,11 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // Serve uploaded images statically
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(uploadsDir, {
+    setHeaders: (res, path) => {
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+}));
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -73,6 +77,20 @@ pool.connect()
         console.error('Error connecting to database:', err);
     });
 
+// Multer error handler middleware
+const handleMulterError = (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'File too large. Maximum size is 5MB' });
+        }
+        return res.status(400).json({ error: err.message });
+    }
+    if (err) {
+        return res.status(400).json({ error: err.message });
+    }
+    next();
+};
+
 // Routes
 
 // GET all products
@@ -80,10 +98,30 @@ app.get('/products', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM products ORDER BY id');
         // Ensure rating is properly formatted (pg should handle this automatically, but just in case)
-        const products = result.rows.map(product => ({
-            ...product,
-            rating: typeof product.rating === 'string' ? JSON.parse(product.rating) : product.rating
-        }));
+        const products = result.rows.map(product => {
+            // Parse rating if it's a string
+            let rating = product.rating;
+            if (typeof rating === 'string') {
+                try {
+                    rating = JSON.parse(rating);
+                } catch (e) {
+                    rating = { rate: 0, count: 0 };
+                }
+            }
+            
+            // Ensure image URL is valid, use default if empty or null
+            let image = product.image;
+            if (!image || image.trim() === '') {
+                image = 'https://fakestoreapi.com/img/71pWzhdJNwL._AC_UL640_QL65_ML3_t.png';
+            }
+            
+            return {
+                ...product,
+                rating: rating || { rate: 0, count: 0 },
+                image: image
+            };
+        });
+        console.log(`Fetched ${products.length} products`);
         res.json(products);
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -103,7 +141,20 @@ app.get('/products/:id', async (req, res) => {
 
         // Ensure rating is properly formatted
         const product = result.rows[0];
-        product.rating = typeof product.rating === 'string' ? JSON.parse(product.rating) : product.rating;
+        let rating = product.rating;
+        if (typeof rating === 'string') {
+            try {
+                rating = JSON.parse(rating);
+            } catch (e) {
+                rating = { rate: 0, count: 0 };
+            }
+        }
+        product.rating = rating || { rate: 0, count: 0 };
+        
+        // Ensure image URL is valid
+        if (!product.image || product.image.trim() === '') {
+            product.image = 'https://fakestoreapi.com/img/71pWzhdJNwL._AC_UL640_QL65_ML3_t.png';
+        }
 
         res.json(product);
     } catch (error) {
@@ -113,18 +164,30 @@ app.get('/products/:id', async (req, res) => {
 });
 
 // POST create new product
-app.post('/products', upload.single('image'), async (req, res) => {
+app.post('/products', upload.single('image'), handleMulterError, async (req, res) => {
     try {
         const { title, price, description, category, rate, count } = req.body;
+
+        // Validate required fields
+        if (!title || !title.trim()) {
+            return res.status(400).json({ error: 'Title is required' });
+        }
+        if (!price || isNaN(parseFloat(price)) || parseFloat(price) < 0) {
+            return res.status(400).json({ error: 'Valid price is required' });
+        }
+        if (!category || !category.trim()) {
+            return res.status(400).json({ error: 'Category is required' });
+        }
 
         // Handle image upload
         let imageUrl = '';
         if (req.file) {
             // Store the path relative to the server
             imageUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
-        } else if (req.body.image) {
+            console.log('Image uploaded:', req.file.filename);
+        } else if (req.body.image && req.body.image.trim()) {
             // If image URL is provided as text (for existing URLs)
-            imageUrl = req.body.image;
+            imageUrl = req.body.image.trim();
         } else {
             // Default image
             imageUrl = 'https://fakestoreapi.com/img/71pWzhdJNwL._AC_UL640_QL65_ML3_t.png';
@@ -135,26 +198,43 @@ app.post('/products', upload.single('image'), async (req, res) => {
             count: parseInt(count) || 0
         };
 
+        console.log('Creating product with data:', {
+            title,
+            price: parseFloat(price),
+            category,
+            imageUrl,
+            rating
+        });
+
         const result = await pool.query(
             `INSERT INTO products (title, price, description, category, image, rating)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-            [title, parseFloat(price), description, category, imageUrl, JSON.stringify(rating)]
+            [title.trim(), parseFloat(price), description ? description.trim() : null, category.trim(), imageUrl, JSON.stringify(rating)]
         );
 
         // Ensure rating is properly formatted in response
         const newProduct = result.rows[0];
         newProduct.rating = typeof newProduct.rating === 'string' ? JSON.parse(newProduct.rating) : newProduct.rating;
 
+        console.log('Product created successfully:', newProduct.id);
         res.status(201).json(newProduct);
     } catch (error) {
         console.error('Error creating product:', error);
-        res.status(500).json({ error: 'Failed to create product' });
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            code: error.code
+        });
+        res.status(500).json({ 
+            error: 'Failed to create product',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
 // PUT update product
-app.put('/products/:id', upload.single('image'), async (req, res) => {
+app.put('/products/:id', upload.single('image'), handleMulterError, async (req, res) => {
     try {
         const { id } = req.params;
         const { title, price, description, category, rate, count, image } = req.body;
@@ -238,7 +318,14 @@ app.delete('/products/:id', async (req, res) => {
     }
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ status: 'OK', message: 'Server is running' });
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Uploads directory: ${uploadsDir}`);
+    console.log(`Health check: http://localhost:${PORT}/health`);
 });
 

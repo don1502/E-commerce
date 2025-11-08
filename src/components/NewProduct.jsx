@@ -77,6 +77,7 @@ const NewProduct = () => {
 
       if (response.ok) {
         const result = await response.json();
+        console.log("Product added successfully:", result);
         alert("Product added successfully!");
         
         // Reset form
@@ -102,12 +103,18 @@ const NewProduct = () => {
         // Refresh product list by navigating to products page
         navigate("/product");
       } else {
-        const error = await response.json();
-        alert(`Error: ${error.error || "Failed to add product"}`);
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        const errorMessage = errorData.error || errorData.message || "Failed to add product";
+        console.error("Error response:", errorData);
+        alert(`Error: ${errorMessage}`);
       }
     } catch (error) {
       console.error("Error adding product:", error);
-      alert("Failed to add product. Please try again.");
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack
+      });
+      alert(`Failed to add product: ${error.message || "Please check your connection and try again."}`);
     } finally {
       setIsSubmitting(false);
     }

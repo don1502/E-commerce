@@ -2,7 +2,7 @@
 -- CREATE DATABASE "e-commerce";
 
 -- Connect to e-commerce database and run the following:
-
+    psql -U postgres -d "e-commerce" -f server/database.sql
 -- Create products table
 CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,

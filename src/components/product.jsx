@@ -112,8 +112,16 @@ const Product = () => {
               <center>
                 <Card.Img
                   variant="top"
-                  src={product.image}
+                  src={product.image || 'https://fakestoreapi.com/img/71pWzhdJNwL._AC_UL640_QL65_ML3_t.png'}
                   className="productImage"
+                  onError={(e) => {
+                    e.target.src = 'https://fakestoreapi.com/img/71pWzhdJNwL._AC_UL640_QL65_ML3_t.png';
+                  }}
+                  style={{ 
+                    height: '200px', 
+                    objectFit: 'contain',
+                    padding: '10px'
+                  }}
                 />
               </center>
               <Card.Body>
